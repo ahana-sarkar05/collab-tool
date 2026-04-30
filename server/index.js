@@ -22,6 +22,10 @@ const io = new Server(httpServer, {
 app.use(cors({ origin: process.env.CLIENT_URL }));
 app.use(express.json());
 
+// Routes
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
 // Test route
 app.get('/', (req, res) => {
   res.json({ message: 'Collab Tool API is running!' });
