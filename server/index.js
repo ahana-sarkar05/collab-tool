@@ -10,10 +10,9 @@ dotenv.config();
 const app = express();
 const httpServer = http.createServer(app);
 
-// Socket.io setup
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL,
+    origin: '*',
     methods: ['GET', 'POST'],
   },
 });
@@ -24,23 +23,43 @@ app.use(express.json());
 
 // Routes
 const authRoutes = require('./routes/auth');
+const documentRoutes = require('./routes/documents');
 app.use('/api/auth', authRoutes);
+app.use('/api/documents', documentRoutes);
 
 // Test route
 app.get('/', (req, res) => {
   res.json({ message: 'Collab Tool API is running!' });
 });
 
-// Socket.io basic connection
+// ─── SOCKET.IO ───────────────────────────────────────────
+const Document = require('./models/Document');
+
 io.on('connection', (socket) => {
   console.log('⚡ User connected:', socket.id);
+
+  // Join document room
+  socket.on('join-document', (documentId) => {
+    socket.join(documentId);
+    console.log(`✅ User ${socket.id} joined document: ${documentId}`);
+  });
+
+  // Broadcast content changes to everyone else in room
+  socket.on('send-changes', ({ documentId, content }) => {
+    socket.to(documentId).emit('receive-changes', content);
+  });
+
+  // Broadcast title changes to everyone else in room
+  socket.on('send-title', ({ documentId, title }) => {
+    socket.to(documentId).emit('receive-title', title);
+  });
 
   socket.on('disconnect', () => {
     console.log('❌ User disconnected:', socket.id);
   });
 });
 
-// Connect to MongoDB then start server
+// ─── MONGODB + START SERVER ──────────────────────────────
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
