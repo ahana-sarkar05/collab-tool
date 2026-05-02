@@ -9,6 +9,25 @@ function Dashboard() {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+      setShowInstall(true);
+    });
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    const result = await installPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+      setShowInstall(false);
+    }
+  };
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -64,6 +83,11 @@ function Dashboard() {
       <nav className={styles.navbar}>
         <h1 className={styles.logo}>📝 CollabDocs</h1>
         <div className={styles.navRight}>
+          {showInstall && (
+            <button onClick={handleInstall} className={styles.installBtn}>
+              📲 Install App
+            </button>
+          )}
           <span className={styles.welcome}>Hello, {user?.name}!</span>
           <button onClick={handleLogout} className={styles.logoutBtn}>
             Logout
